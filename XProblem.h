@@ -1740,6 +1740,9 @@ class TCanalIBMWithElasticBoundary: public TCylinderBoundaryProblem
         bool InitialViscosityDistribution(int i, int j, int k, int N, int L, int M);
         bool ConcentrationInletMask(int i, int j, int k, int N, int L, int M);
         const double ConcentrationInletCondition(int i, int j, int k, int N, int L, int M);
+		double GetLengthX() {return this->fLengthX;}
+		double GetLengthY() {return this->fLengthY;}
+		double GetLengthZ() {return this->fLengthZ;}
 };
 
 

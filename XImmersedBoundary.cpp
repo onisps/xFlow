@@ -829,7 +829,6 @@ TCylinderElasticBoundary* TCylinderElasticBoundary::Initialize()
 		}
 	}
 	else if (tube_type == 2) // dyga
-		//--------------------------------
 	{
 		char filename[] = "line.msh";
 		FILE* SplFile;
@@ -1081,7 +1080,6 @@ TCylinderElasticBoundary* TCylinderElasticBoundary::Initialize()
 		delete[]zSpl;// zSpl = NULL;
 	}
 	else if (tube_type == 4) // dyga
-	//--------------------------------
 	{
 		char filename[] = "line.msh";
 		FILE* SplFile;
@@ -1674,6 +1672,7 @@ TCylinderElasticBoundary* TCylinderElasticBoundary::Initialize()
 				cp.x+=midpoint.x;
 				cp.y+=midpoint.y;
 				cp.z+=midpoint.z;
+
 				//if(iieo == 0 || curr_z==lmax) printf("Mass Center %3d: x: %8.6f | y: %8.6f | z: %8.6f\n",iieo,midpoint.x,midpoint.y,midpoint.z);
 				//fprintf(f1,"%f %f %f\n",midpoint.x,midpoint.y,midpoint.z);
 				int loc_start_iter;
@@ -1743,12 +1742,13 @@ TCylinderElasticBoundary* TCylinderElasticBoundary::Initialize()
 			cp.y/=(ieo*inCircle);
 			cp.z/=(ieo*inCircle);
 			double tx, ty, tz;
-			double tx1, ty1, tz1;
+			double tx1, ty1, tz1;				
+
 			for(int i=0;i<ieo*inCircle;i++)
 			{
 				//float betta = 184 * M_PI/180.0;
 				//float betta1 = -2 * M_PI/180.0;
-				float betta = 0 * M_PI/180.0;
+				float betta = 180 * M_PI/180.0;
 				float betta1 = 0 * M_PI/180.0;
 				//tx = output_coord[i].x;
 				//ty = cp.y + (output_coord[i].y - cp.y)*cos(betta) - (output_coord[i].z - cp.z)*sin(betta);
@@ -1764,14 +1764,50 @@ TCylinderElasticBoundary* TCylinderElasticBoundary::Initialize()
 				output_coord[i].x = tx;
 				output_coord[i].y = ty;
 				output_coord[i].z = tz;
-				
+
+			
 				//output_coord[i].x += 4.13;
 				//output_coord[i].y -= 0.05;
 				//output_coord[i].z += 1;
-				output_coord[i].x += 0.009624;
-				output_coord[i].y += 0.63;
-				output_coord[i].z += 0.54;
+				//output_coord[i].x += 0.009624+len;
+				//output_coord[i].y += 0.63;
+				//output_coord[i].z += 0.54;
 			}//*/
+
+			double min_x;
+			int i_start, i_end;
+			for(int i=0;i<ieo;i++)
+			{
+				min_x = output_coord[i*ieo].x;
+				if(min_x > output_coord[i*inCircle].x)
+				{
+					min_x = output_coord[i*inCircle].x;
+					i_end = ieo*inCircle;
+					//i_end = ieo*inCircle + j;
+				}
+				i_start = i*inCircle - inCircle;
+			}			
+			printf("i_start and i_end is: (%6d %6d)\n",i_start, i_end);
+			xyz midpoint;
+			xyz midpoint2;
+			findMassCenter(output_coord, midpoint,i_start,i_end);
+			//findMassCenter(output_coord, midpoint,0,inCircle);
+			printf("center of inflow to vessel before is: (%8.6f %8.6f %8.6f)\n",midpoint.x, midpoint.y, midpoint.z);
+			//*
+			double shift_by_x = len;
+			double shift_by_y = this->GetYCenter() - midpoint.y;
+			double shift_by_z = this->GetZCenter() - midpoint.z;
+			printf("shifts is: (%8.6f %8.6f %8.6f)\n",shift_by_x, shift_by_y, shift_by_z);
+			for(int i=0;i<ieo*inCircle;i++)
+			{
+				output_coord[i].x += shift_by_x;
+				output_coord[i].y += shift_by_y;
+				output_coord[i].z += shift_by_z;
+			}//*/
+			findMassCenter(output_coord, midpoint,i_start,i_end);
+			//findMassCenter(output_coord, midpoint,ieo*inCircle,ieo*inCircle + inCircle);
+			//findMassCenter(output_coord, midpoint,0,inCircle);
+			printf("center of inflow to vessel after  is: (%8.6f %8.6f %8.6f)\n",midpoint.x, midpoint.y, midpoint.z);
 		}
 
 		//debug output to file

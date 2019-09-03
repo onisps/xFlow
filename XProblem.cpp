@@ -6121,7 +6121,7 @@ void TVPProblem::SolveBySplitting()
 				CountBoundaryP(p);
 				CountBoundaryConcentration(cnc);
 				CountBoundaryViscosity(vis);
-				ComputeStress(u,v,w,timeStepNumber);
+				//ComputeStress(u,v,w,timeStepNumber);
 				//---------------------------------------------------------------
 				// Output to VTK
 				//---------------------------------------------------------------
@@ -6381,7 +6381,7 @@ void TVPProblem::SolveBySplitting()
 				// Output to .dat
 				//---------------------------------------------------------------
 
-				//*
+				/*
 
 				len = strlen(TProblem::GlobalCatalog);
 				char *zonesName = new char[len + 50];
@@ -6530,8 +6530,9 @@ void TVPProblem::SolveBySplitting()
 				}
 
 				fclose(f_full);
-				//*/
 				delete[]zonesName;// zonesName = NULL;
+				//*/
+				
 
 				//------------------------------------------------------------------
 				// Two format output end
@@ -9114,18 +9115,24 @@ void TImmersedBoundaryProblem::OutputBoundary(int timeStepNumber)
 
 	if (timeStepNumber % TProblem::GlobalSaveStep == 0 || timeStepNumber == 1)
 	{
-		//*
 		int len = strlen(TProblem::GlobalCatalog);
-		char *zonesName = new char[len + 50];
+		int i1, i2, i3, i4;
+		int max_cur, max_next;
+		int Circles = fBoundary->height_nodes;
+		int InCircle = fBoundary->radius_nodes;
+		FILE* f = NULL;
+		char *zonesName;
+		char fileName[40];
+		/*
+		zonesName = new char[len + 50];
 		string_copy(zonesName, TProblem::GlobalCatalog, len + 50);
 
-		char fileName[40];
+		
 		string_print(fileName, 40, "bound%d.dat", 10000 + timeStepNumber);
 		string_concat(zonesName, fileName, len + 50);
 
-		FILE* f = file_open(zonesName, "w");
-		int Circles = fBoundary->height_nodes;
-		int InCircle = fBoundary->radius_nodes;
+		f = file_open(zonesName, "w");
+
 		printf("save Circles = %d inCircle = %d\n", Circles, InCircle);
 		fprintf(f, "TITLE = \"CVP\"\n");
 		//fprintf(f,"VARIABLES = X,Y,Z,U,V,W,P\n");
@@ -9133,8 +9140,8 @@ void TImmersedBoundaryProblem::OutputBoundary(int timeStepNumber)
 		//fprintf(f, "ZONE I=%d, J=%d, K=%d, F=POINT\n", N + 1, L + 1, M + 1);
 		fprintf(f, "ZONE N =%d, E =%d, DATAPACKING = POINT, ZONETYPE = FEQUADRILATERAL\n", Circles*InCircle, InCircle*(Circles - 1));
 
-		for (int cr = 0; cr < Circles; ++cr)
-			for (int i = 0; i < InCircle; ++i)
+		for (int cr = 0; cr < Circles; cr++)
+			for (int i = 0; i < InCircle; i++)
 			{
 				fprintf(f, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n", (double)boundary_x[cr*InCircle + i], (double)boundary_y[cr*InCircle + i], (double)boundary_z[cr*InCircle + i],
 					fBoundary->nodes[cr*InCircle + i]->xVel, fBoundary->nodes[cr*InCircle + i]->yVel, fBoundary->nodes[cr*InCircle + i]->zVel,
@@ -9143,8 +9150,6 @@ void TImmersedBoundaryProblem::OutputBoundary(int timeStepNumber)
 			}
 
 
-		int i1, i2, i3, i4;
-		int max_cur, max_next;
 		for (int cr = 0; cr < Circles - 1; ++cr)
 			for (int i = 0; i < InCircle; ++i)
 			{
@@ -9241,6 +9246,12 @@ void TImmersedBoundaryProblem::OutputBoundary(int timeStepNumber)
 			{
 				fprintf(f, "%lf\n", fBoundary->nodes[cr*InCircle + i]->concentration); // fBoundary->nodes[cr*InCircle + i]->cc);
 			}
+		/*fprintf(f, "\n\nSCALARS ShearStress float\nLOOKUP_TABLE default\n");
+		for (int cr = 0; cr < Circles; ++cr)
+			for (int i = 0; i < InCircle; ++i)
+			{
+				fprintf(f, "%lf\n", fBoundary->nodes[cr*InCircle + i]->ShearStress); // fBoundary->nodes[cr*InCircle + i]->cc);
+			}*/
 		//fprintf(f,"VARIABLES = X,Y,Z,U,V,W,P\n");
 		//fprintf(f, "VARIABLES = X,Y,Z,U,V,W,P,Rho,CC\n");
 		fclose(f);
@@ -9717,7 +9728,7 @@ void TImmersedBoundaryProblem::ComputeStress(TRnRelease3dSpace &U, TRnRelease3dS
 			//yc = TCanalIBMWithElasticBoundary->fLengthY/2.;
 			//zc = TCanalIBMWithElasticBoundary->fLengthZ/2.;
 			yc = fBoundary->GetYCenter();
-			zc =  fBoundary->GetYCenter();
+			zc =  fBoundary->GetZCenter();
 			double mu = fBoundary->nodes[il*fBoundary->radius_nodes + ir]->vis;
 			double r = sqrt( (xb - xc)*(xb - xc) + (yb - yc)*(yb - yc) + (zb - zc)*(zb - zc) );
 			//printf("\n xb > %lf -- yb > %lf -- zb > %lf\n xc > %lf -- yc > %lf -- zc > %lf\nr > %lf\n",xb,yb,zb,xc,yc,zc,r);
