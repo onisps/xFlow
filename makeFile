@@ -1,0 +1,1 @@
+mpic++ XFlow.cpp cnpy.cpp XGrid.cpp XMask.cpp XProblem.cpp XService.cpp XSpace.cpp XStatement.cpp XImmersedBoundary.cpp XOperator.cpp XSeparator.cpp XSLAE.cpp XSpaceModel.cpp XUtils.cpp -std=c++11 -lstdc++ -o runXFlow
