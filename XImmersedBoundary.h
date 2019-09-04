@@ -27,6 +27,7 @@ class TNode
 {
     public:
         double x,y,z;
+        double x_0,y_0,z_0;
         double xPrev,yPrev,zPrev;
         double xRef, yRef, zRef;
         double xForce, yForce, zForce;
@@ -64,7 +65,11 @@ class TNode
 
         static double getX(TNode* node) {return node->x;};
         static double getY(TNode* node) {return node->y;};
-        static double getZ(TNode* node) {return node->z;};
+        static double getZ(TNode* node) {return node->z;};        
+		
+		static double getX_0(TNode* node) {return node->x_0;};
+        static double getY_0(TNode* node) {return node->y_0;};
+        static double getZ_0(TNode* node) {return node->z_0;};
 
         static double getXRef(TNode* node) {return node->xRef;};
         static double getYRef(TNode* node) {return node->yRef;};
