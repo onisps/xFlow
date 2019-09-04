@@ -376,6 +376,7 @@ void sortByRadius(xyz* arr, xyz midpoint, int ibegin, int iend)
 TNode::TNode()
 {
     x = y = z = 0;
+    x_0 = y_0 = z_0 = 0;
     xPrev = yPrev = zPrev = -100000;
     xRef = yRef = zRef = 0;
     xForce = yForce = zForce = 0;
@@ -403,18 +404,21 @@ TSphereBoundary* TSphereBoundary::Initialize()
 
             double x = this->xCenter + this->radius * cos(double(theta)/9.0 * 2 * M_PI) * sin(double(phi)/9.0 * M_PI);
             this->nodes[phi + theta*10]->x = x;
+            this->nodes[phi + theta*10]->x_0 = x;
             this->nodes[phi + theta*10]->xRef = x;
             this->nodes[phi + theta*10]->xVel = 0;
             this->nodes[phi + theta*10]->xForce = 0;
 
             double y = this->yCenter + this->radius * sin(double(theta)/9.0 * 2 * M_PI) * sin(double(phi)/9.0 * M_PI);
             this->nodes[phi + theta*10]->y = y;
+            this->nodes[phi + theta*10]->y_0 = y;
             this->nodes[phi + theta*10]->yRef = y;
             this->nodes[phi + theta*10]->yVel = 0;
             this->nodes[phi + theta*10]->yForce = 0;
 
             double z = this->zCenter + this->radius * cos(double(phi)/9.0 * M_PI);
             this->nodes[phi + theta*10]->z = z;
+            this->nodes[phi + theta*10]->z_0 = z;
             this->nodes[phi + theta*10]->zRef = z;
             this->nodes[phi + theta*10]->zVel = 0;
             this->nodes[phi + theta*10]->zForce = 0;
@@ -439,18 +443,21 @@ TSimpleValve* TSimpleValve::Initialize()
 
             double x = this->xCenter + this->radius * sin(-M_PI * 0.5 * (double)(9-i)/9);
             this->nodes[i+n*10]->x = x;
+            this->nodes[i+n*10]->x_0 = x;
             this->nodes[i+n*10]->xRef = x;
             this->nodes[i+n*10]->xVel = 0;
             this->nodes[i+n*10]->xForce = 0;
 
             double y = 0.5 - this->radius * cos(-M_PI * 0.5 * (double)(9-i)/9);
             this->nodes[i+n*10]->y = y;
+            this->nodes[i+n*10]->y_0 = y;
             this->nodes[i+n*10]->yRef = y;
             this->nodes[i+n*10]->yVel = 0;
             this->nodes[i+n*10]->yForce = 0;
 
             double z = 0.5 * n / 9;
             this->nodes[i+n*10]->z = z;
+            this->nodes[i+n*10]->z_0 = z;
             this->nodes[i+n*10]->zRef = z;
             this->nodes[i+n*10]->zVel = 0;
             this->nodes[i+n*10]->zForce = 0;
@@ -461,18 +468,21 @@ TSimpleValve* TSimpleValve::Initialize()
         for (int i = 0; i < 10; i++) {
             double x = this->xCenter + this->radius * sin(-M_PI * 0.5 * (double)(9-i)/9);
             this->nodes[i+n*10+100]->x = x;
+            this->nodes[i+n*10+100]->x_0 = x;
             this->nodes[i+n*10+100]->xRef = x;
             this->nodes[i+n*10+100]->xVel = 0;
             this->nodes[i+n*10+100]->xForce = 0;
 
             double y = 0.0 + this->radius * cos(-M_PI * 0.5 * (double)(9-i)/9);
             this->nodes[i+n*10+100]->y = y;
+            this->nodes[i+n*10+100]->y_0 = y;
             this->nodes[i+n*10+100]->yRef = y;
             this->nodes[i+n*10+100]->yVel = 0;
             this->nodes[i+n*10+100]->yForce = 0;
 
             double z = 0.5 * n / 9 ;
             this->nodes[i+n*10+100]->z = z;
+            this->nodes[i+n*10+100]->z_0 = z;
             this->nodes[i+n*10+100]->zRef = z;
             this->nodes[i+n*10+100]->zVel = 0;
             this->nodes[i+n*10+100]->zForce = 0;
@@ -566,18 +576,21 @@ TCylinderBoundary* TCylinderBoundary::Initialize()
 
             double x = float(n) / float(120);
             this->nodes[i+n*120]->x = x;
+            this->nodes[i+n*120]->x_0 = x;
             this->nodes[i+n*120]->xRef = x;
             this->nodes[i+n*120]->xVel = 0;
             this->nodes[i+n*120]->xForce = 0;
 
             double y = this->yCenter - this->radius * cos(-M_PI * 2 * (double)(119-i)/119);
             this->nodes[i+n*120]->y = y;
+            this->nodes[i+n*120]->y_0 = y;
             this->nodes[i+n*120]->yRef = y;
             this->nodes[i+n*120]->yVel = 0;
             this->nodes[i+n*120]->yForce = 0;
 
             double z = this->zCenter + this->radius * sin(-M_PI * 2 * (double)(119-i)/119);
             this->nodes[i+n*120]->z = z;
+            this->nodes[i+n*120]->z_0 = z;
             this->nodes[i+n*120]->zRef = z;
             this->nodes[i+n*120]->zVel = 0;
             this->nodes[i+n*120]->zForce = 0;
@@ -604,6 +617,7 @@ TDeformedCylinderBoundary* TDeformedCylinderBoundary::Initialize()
 
             double x = float(n) / float(120);
             this->nodes[i+n*120]->x = x;
+            this->nodes[i+n*120]->x_0 = x;
             this->nodes[i+n*120]->xRef = x;
             this->nodes[i+n*120]->xVel = 0;
             this->nodes[i+n*120]->xForce = 0;
@@ -615,12 +629,14 @@ TDeformedCylinderBoundary* TDeformedCylinderBoundary::Initialize()
 
             double y = this->yCenter - radius * cos(-M_PI * 2 * (double)(119-i)/119);
             this->nodes[i+n*120]->y = y;
+            this->nodes[i+n*120]->y_0 = y;
             this->nodes[i+n*120]->yRef = y;
             this->nodes[i+n*120]->yVel = 0;
             this->nodes[i+n*120]->yForce = 0;
 
             double z = this->zCenter + radius * sin(-M_PI * 2 * (double)(119-i)/119);
             this->nodes[i+n*120]->z = z;
+            this->nodes[i+n*120]->z_0 = z;
             this->nodes[i+n*120]->zRef = z;
             this->nodes[i+n*120]->zVel = 0;
             this->nodes[i+n*120]->zForce = 0;
@@ -829,7 +845,6 @@ TCylinderElasticBoundary* TCylinderElasticBoundary::Initialize()
 		}
 	}
 	else if (tube_type == 2) // dyga
-		//--------------------------------
 	{
 		char filename[] = "line.msh";
 		FILE* SplFile;
@@ -1081,7 +1096,6 @@ TCylinderElasticBoundary* TCylinderElasticBoundary::Initialize()
 		delete[]zSpl;// zSpl = NULL;
 	}
 	else if (tube_type == 4) // dyga
-	//--------------------------------
 	{
 		char filename[] = "line.msh";
 		FILE* SplFile;
@@ -1674,6 +1688,7 @@ TCylinderElasticBoundary* TCylinderElasticBoundary::Initialize()
 				cp.x+=midpoint.x;
 				cp.y+=midpoint.y;
 				cp.z+=midpoint.z;
+
 				//if(iieo == 0 || curr_z==lmax) printf("Mass Center %3d: x: %8.6f | y: %8.6f | z: %8.6f\n",iieo,midpoint.x,midpoint.y,midpoint.z);
 				//fprintf(f1,"%f %f %f\n",midpoint.x,midpoint.y,midpoint.z);
 				int loc_start_iter;
@@ -1743,12 +1758,13 @@ TCylinderElasticBoundary* TCylinderElasticBoundary::Initialize()
 			cp.y/=(ieo*inCircle);
 			cp.z/=(ieo*inCircle);
 			double tx, ty, tz;
-			double tx1, ty1, tz1;
+			double tx1, ty1, tz1;				
+
 			for(int i=0;i<ieo*inCircle;i++)
 			{
 				//float betta = 184 * M_PI/180.0;
 				//float betta1 = -2 * M_PI/180.0;
-				float betta = 0 * M_PI/180.0;
+				float betta = 180 * M_PI/180.0;
 				float betta1 = 0 * M_PI/180.0;
 				//tx = output_coord[i].x;
 				//ty = cp.y + (output_coord[i].y - cp.y)*cos(betta) - (output_coord[i].z - cp.z)*sin(betta);
@@ -1764,14 +1780,50 @@ TCylinderElasticBoundary* TCylinderElasticBoundary::Initialize()
 				output_coord[i].x = tx;
 				output_coord[i].y = ty;
 				output_coord[i].z = tz;
-				
+
+			
 				//output_coord[i].x += 4.13;
 				//output_coord[i].y -= 0.05;
 				//output_coord[i].z += 1;
-				output_coord[i].x += 0.009624;
-				output_coord[i].y += 0.63;
-				output_coord[i].z += 0.54;
+				//output_coord[i].x += 0.009624+len;
+				//output_coord[i].y += 0.63;
+				//output_coord[i].z += 0.54;
 			}//*/
+
+			double min_x;
+			int i_start, i_end;
+			for(int i=0;i<ieo;i++)
+			{
+				min_x = output_coord[i*ieo].x;
+				if(min_x > output_coord[i*inCircle].x)
+				{
+					min_x = output_coord[i*inCircle].x;
+					i_end = ieo*inCircle;
+					//i_end = ieo*inCircle + j;
+				}
+				i_start = i*inCircle - inCircle;
+			}			
+			printf("i_start and i_end is: (%6d %6d)\n",i_start, i_end);
+			xyz midpoint;
+			xyz midpoint2;
+			findMassCenter(output_coord, midpoint,i_start,i_end);
+			//findMassCenter(output_coord, midpoint,0,inCircle);
+			printf("center of inflow to vessel before is: (%8.6f %8.6f %8.6f)\n",midpoint.x, midpoint.y, midpoint.z);
+			//*
+			double shift_by_x = len;
+			double shift_by_y = this->GetYCenter() - midpoint.y;
+			double shift_by_z = this->GetZCenter() - midpoint.z;
+			printf("shifts is: (%8.6f %8.6f %8.6f)\n",shift_by_x, shift_by_y, shift_by_z);
+			for(int i=0;i<ieo*inCircle;i++)
+			{
+				output_coord[i].x += shift_by_x;
+				output_coord[i].y += shift_by_y;
+				output_coord[i].z += shift_by_z;
+			}//*/
+			findMassCenter(output_coord, midpoint,i_start,i_end);
+			//findMassCenter(output_coord, midpoint,ieo*inCircle,ieo*inCircle + inCircle);
+			//findMassCenter(output_coord, midpoint,0,inCircle);
+			printf("center of inflow to vessel after  is: (%8.6f %8.6f %8.6f)\n",midpoint.x, midpoint.y, midpoint.z);
 		}
 
 		//debug output to file
@@ -1844,17 +1896,20 @@ TCylinderElasticBoundary* TCylinderElasticBoundary::Initialize()
 				double z = output_coord[i + n*this->radius_nodes].z;
 
 				this->nodes[i + n*this->radius_nodes]->x = x;
+				this->nodes[i + n*this->radius_nodes]->x_0 = x;
 				this->nodes[i + n*this->radius_nodes]->xRef = x;
 				this->nodes[i + n*this->radius_nodes]->xVel = 0;
 				this->nodes[i + n*this->radius_nodes]->xForce = 0;
 
 
 				this->nodes[i + n*this->radius_nodes]->y = y;
+				this->nodes[i + n*this->radius_nodes]->y_0 = y;
 				this->nodes[i + n*this->radius_nodes]->yRef = y;
 				this->nodes[i + n*this->radius_nodes]->yVel = 0;
 				this->nodes[i + n*this->radius_nodes]->yForce = 0;
 
 				this->nodes[i + n*this->radius_nodes]->z = z;
+				this->nodes[i + n*this->radius_nodes]->z_0 = z;
 				this->nodes[i + n*this->radius_nodes]->zRef = z;
 				this->nodes[i + n*this->radius_nodes]->zVel = 0;
 				this->nodes[i + n*this->radius_nodes]->zForce = 0;

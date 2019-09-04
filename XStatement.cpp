@@ -7920,16 +7920,16 @@ void TSimpleWithCylinderPressureMaskGenerator::CreateMultyGrids()
 	for(int j=1; j<NyP-1; ++j)
 		for(int k=1; k<NzP-1; ++k)
 		{
+			 MaskP[0][j][k].mask = MaskP[NxP-1][j][k].mask = TPreDefinedBorderPoint;
             if (pressureCondition(0, j, k, NxP, NyP, NzP))
             {
-                MaskP[0][j][k].mask = MaskP[NxP-1][j][k].mask = TFictivePoint;
+                MaskP[0][j][k].mask =  TFictivePoint;
             }
             else
             {
-                MaskP[0][j][k].mask = MaskP[NxP-1][j][k].mask = TPreDefinedBorderPoint;
+                MaskP[0][j][k].mask = TPreDefinedBorderPoint;
             }
 
-			//MaskP[0][j][k].mask = MaskP[NxP-1][j][k].mask = TPreDefinedBorderPoint;
 			MaskP[0][j][k].normal = new glTVector(-1,0,0);
 			MaskP[NxP-1][j][k].normal = new glTVector(1,0,0);
 		}
