@@ -381,6 +381,7 @@ class TVPProblem: public THydrodynamicsProblem
 	 
 	  virtual void InterpolateUpdatePathes(TRnRelease3dSpace &velocity, T3dNormalGrid *grid, const int axis, const int timeStepNumber){}
 	  virtual void OutputBoundary(int timeStepNumber) {}
+	  virtual void OutputBoundary(int timeStepNumber, double deltaT) {}
 	  virtual void CountBoundaryP(TRnRelease3dSpace &pressure){}
 	  virtual void CountBoundaryConcentration(TRnRelease3dSpace &c){}
 	  virtual void CountBoundaryViscosity(TRnRelease3dSpace &vis){}
@@ -393,7 +394,7 @@ class TVPProblem: public THydrodynamicsProblem
 	  //============
 	  virtual void ComputeChanging(int timeStepNumber) {}
 	  virtual void ComputeStress() {}
-	  virtual void ComputeStress(TRnRelease3dSpace &U, TRnRelease3dSpace &V, TRnRelease3dSpace &W, int timestepNumber) {}
+	  virtual void ComputeStress(TRnRelease3dSpace &U, TRnRelease3dSpace &V, TRnRelease3dSpace &W,  int timestepNumber) {}
 	  //============
 
     private:            
@@ -1095,6 +1096,7 @@ class TImmersedBoundaryProblem: public TVPProblem
 
 		void InterpolateUpdatePathes(TRnRelease3dSpace &velocity, T3dNormalGrid *grid, const int axis, const int timeStepNumber);
         void OutputBoundary(int timeStepNumber);
+        void OutputBoundary(int timeStepNumber, double deltaT);
 
         double fStiffness;
         TImmersedBoundary *fBoundary;
@@ -1123,8 +1125,9 @@ class TImmersedBoundaryProblem: public TVPProblem
 		double *slice_z_0;
 		//*/
 		void ComputeChanging(int timeStepNumber);
+		void CountBoundaryWSS(TRnRelease3dSpace &wss);
 		void ComputeStress(int timestepNumber);
-		void ComputeStress(TRnRelease3dSpace &U, TRnRelease3dSpace &V, TRnRelease3dSpace &W, int timestepNumber);
+		void ComputeStress(TRnRelease3dSpace &u, TRnRelease3dSpace &v, TRnRelease3dSpace &w,  int timestepNumber);
         //==========
 		
 		//TNode* UpdateNodeType(TNode *node);

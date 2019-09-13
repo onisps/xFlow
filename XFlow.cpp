@@ -22,7 +22,7 @@ int main(int argc, const char* argv[])
 		double Radius = 0.5;	//decimeters
 		double Mass = 0.05;	//50 gramms
 		double k = 1;
-		double Stiffness = k * 2e+6*(Mass*((Radius+0.1)*(Radius+0.1)+ Radius*Radius)/2); //E*(kg*m*m) => E*(g*1e-3*dm*dm)
+		double Stiffness = k * 2e+6*(Mass*((Radius+0.1)*(Radius+0.1)+ Radius*Radius)/2*1e-2);
 		printf("stiff is: %f\n",Stiffness);
 		/*
 		//in meters
@@ -41,7 +41,7 @@ int main(int argc, const char* argv[])
 		double Lx = 6.183800;
 		double Ly = 2;
 		double Lz = 2;
-		double Pin = 19*133.3;
+		double Pin = 6;
 		double Pout = 0*133.3;
 		double SpaceStep = 0.05;
 		
@@ -54,7 +54,7 @@ int main(int argc, const char* argv[])
 		TProblem::GlobalLength = 1;
 		TProblem::GlobalVelocity = 1;
 		TProblem::GlobalPressure = 1;
-		TProblem::GlobalSaveStep = 2;
+		TProblem::GlobalSaveStep = 1;
 
 	
 

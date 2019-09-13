@@ -4347,7 +4347,7 @@ void TVPProblem::SolveBySplitting()
 		//ChangeStifness(timeStepNumber);
 		printf("\n\n");
 		printf("*****************************************************\n");
-		printf("Time step = %d: Starting...\n", timeStepNumber);
+		printf("Time step = %d\t::\tTime: %f \n", timeStepNumber,timeStepNumber*fTimeSeparator->SeparationValue);
 
 		//Restructing (Begin)
 
@@ -6101,8 +6101,11 @@ void TVPProblem::SolveBySplitting()
 
 
 
-
-
+			printf("Compute WSS: ......\n");
+			ComputeStress(u,v,w, timeStepNumber);
+			printf("Compute WSS: OK.\n");
+			
+			
 			//Saving results (Begin)
 			if (timeStepNumber % TProblem::GlobalSaveStep == 0 || timeStepNumber == 1)
 			{
@@ -6110,9 +6113,9 @@ void TVPProblem::SolveBySplitting()
 				printf("Saving results: Starting...\n");
 				start = clock();
 
-				TRnRelease3dSpace& uR = u;
-				TRnRelease3dSpace& vR = v;
-				TRnRelease3dSpace& wR = w;
+				//TRnRelease3dSpace& uR = u;
+				//TRnRelease3dSpace& vR = v;
+				//TRnRelease3dSpace& wR = w;
 
 				TRnRelease3dSpace& rpTrXR = rpTrX;
 				TRnRelease3dSpace& rpTrYR = rpTrY;
@@ -6126,48 +6129,52 @@ void TVPProblem::SolveBySplitting()
 				// Output to VTK
 				//---------------------------------------------------------------
 
-
-				int len = strlen(TProblem::GlobalCatalog);
-				char *vtk_fileName = new char[len + 50];
-				string_copy(vtk_fileName, TProblem::GlobalCatalog, len + 50);
+				printf("Saving whole volume....\n");
 
 				char fileName[40];
-				string_print(fileName, 40, "flow%d.vtk", 10000 + timeStepNumber);
-				string_concat(vtk_fileName, fileName, len + 50);
 
-
-				FILE* vtk_ftp = file_open(vtk_fileName, "w");
+				float output_time = 0;
+				if(timeStepNumber>1)	output_time =  timeStepNumber*fTimeSeparator->SeparationValue;
+					
+				string_print(fileName, 40, "../Res/flow%6.4f.vtk",output_time);
+			
+				FILE* vtk_ftp = file_open(fileName, "w");
 
 				fprintf(vtk_ftp, "# vtk DataFile Version 3.0\n");
 				fprintf(vtk_ftp, "Flow\nASCII\n\n");
 				fprintf(vtk_ftp, "DATASET STRUCTURED_GRID\n");
-
+				
 				T3dNormalGrid& vtk_grid = dynamic_cast<T3dNormalGrid&>(*fGrid);
+				
 				int vtk_N = vtk_grid.GetSeparator1().EndIndex;
 				int vtk_L = vtk_grid.GetSeparator2().EndIndex;
 				int vtk_M = vtk_grid.GetSeparator3().EndIndex;
-				int vtk_NML = (vtk_N )*(vtk_L )*(vtk_M );
-				fprintf(vtk_ftp, "DIMENSIONS %d %d %d\n", vtk_N , vtk_L , vtk_M );
+				int vtk_NML = (vtk_N - 1)*(vtk_L - 1)*(vtk_M - 1);
+				fprintf(vtk_ftp, "DIMENSIONS %d %d %d\n", vtk_N - 1, vtk_L - 1 , vtk_M - 1 );
 				fprintf(vtk_ftp, "POINTS %d double\n", vtk_NML);
+				
 				const T3dNumberMask& vtk_mask = vtk_grid.Mask;
-
+				const T3dNumberMask& vtk_maskC = gridC.Mask;
+				const T3dNumberMask& vtk_maskD = gridDensity.Mask;		
+				
 				const double* vtk_x = vtk_grid.GetSeparator1().Dimension;
 				const double* vtk_y = vtk_grid.GetSeparator2().Dimension;
 				const double* vtk_z = vtk_grid.GetSeparator3().Dimension;
 				//const T3dNumberMask& vtk_mask = grid.Mask;
-				for (int k = 1; k < vtk_M + 1; k++)
-					for (int j = 1; j < vtk_L + 1; j++)
-						for (int i = 1; i < vtk_N + 1; i++)
-							fprintf(vtk_ftp, "%lf  %lf  %lf\n", (float)vtk_x[i] * (TProblem::GlobalLength), (float)vtk_y[j] * (TProblem::GlobalLength), (float)vtk_z[k] * (TProblem::GlobalLength));
+				for (int k = 1; k < vtk_M ; k++)
+					for (int j = 1; j < vtk_L; j++)
+						for (int i = 1; i < vtk_N; i++)
+							fprintf(vtk_ftp, "%f  %f  %f\n", vtk_x[i], vtk_y[j], vtk_z[k]);
 
 				T3dNormalGrid& vtk_gridP = dynamic_cast<T3dNormalGrid&>(*fGridP);
 				const T3dNumberMask& vtk_maskP = vtk_gridP.Mask;
+				
 				fprintf(vtk_ftp, "POINT_DATA %d\n\nVECTORS Velocity double\n", vtk_NML);
-				for (int k = 1; k < vtk_M + 1; k++)
+				for (int k = 1; k < vtk_M ; k++)
 				{
-					for (int j = 1; j < vtk_L + 1; j++)
+					for (int j = 1; j < vtk_L; j++)
 					{
-						for (int i = 1; i < vtk_N + 1; i++)
+						for (int i = 1; i < vtk_N; i++)
 						{
 
 							double uu;
@@ -6178,26 +6185,26 @@ void TVPProblem::SolveBySplitting()
 							if (mijk == TFictivePoint) { uu = 0; vv = 0; ww = 0; }
 							else
 							{
-								uu = (uR[i][j][k] + uR[i][j + 1][k] + uR[i][j][k + 1] + uR[i][j + 1][k + 1]) / 4;
-								vv = (vR[i][j][k] + vR[i + 1][j][k] + vR[i][j][k + 1] + vR[i + 1][j][k + 1]) / 4;
-								ww = (wR[i][j][k] + wR[i + 1][j][k] + wR[i][j + 1][k] + wR[i + 1][j + 1][k]) / 4;
+								uu = (u[i][j][k] + u[i][j + 1][k] + u[i][j][k + 1] + u[i][j + 1][k + 1]) / 4;
+								vv = (v[i][j][k] + v[i + 1][j][k] + v[i][j][k + 1] + v[i + 1][j][k + 1]) / 4;
+								ww = (w[i][j][k] + w[i + 1][j][k] + w[i][j + 1][k] + w[i + 1][j + 1][k]) / 4;
 							}
 
 							//fprintf(f,"%lf,",dnst);
-							fprintf(vtk_ftp, "%lf ", (double)uu*(TProblem::GlobalVelocity));
-							fprintf(vtk_ftp, "%lf ", (double)vv*(TProblem::GlobalVelocity));
-							fprintf(vtk_ftp, "%lf\n ", (double)ww*(TProblem::GlobalVelocity));
+							fprintf(vtk_ftp, "%f ", uu);
+							fprintf(vtk_ftp, "%f ", vv);
+							fprintf(vtk_ftp, "%f\n ", ww);
 
 						}
 					}
 				}
 
 				fprintf(vtk_ftp, "\nSCALARS Pressure float\nLOOKUP_TABLE default\n");
-				for (int k = 1; k < vtk_M + 1; k++)
+				for (int k = 1; k < vtk_M ; k++)
 				{
-					for (int j = 1; j < vtk_L + 1; j++)
+					for (int j = 1; j < vtk_L; j++)
 					{
-						for (int i = 1; i < vtk_N + 1; i++)
+						for (int i = 1; i < vtk_N; i++)
 						{
 							double pp;
 							int mijk = vtk_maskP[i][j][k];
@@ -6233,18 +6240,17 @@ void TVPProblem::SolveBySplitting()
 
 								pp = (p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8) / avr;
 							}
-							fprintf(vtk_ftp, "%lf\n ", (double)pp);
+							fprintf(vtk_ftp, "%f\n ", pp);
 						}
 					}
 				}
 
 				fprintf(vtk_ftp, "\nSCALARS Density float\nLOOKUP_TABLE default\n");
-				const T3dNumberMask& vtk_maskD = gridDensity.Mask;
-				for (int k = 1; k < vtk_M + 1; k++)
+				for (int k = 1; k < vtk_M ; k++)
 				{
-					for (int j = 1; j < vtk_L + 1; j++)
+					for (int j = 1; j < vtk_L; j++)
 					{
-						for (int i = 1; i < vtk_N + 1; i++)
+						for (int i = 1; i < vtk_N; i++)
 						{
 							double dnst;
 							int mijk = vtk_maskD[i][j][k];
@@ -6277,20 +6283,18 @@ void TVPProblem::SolveBySplitting()
 
 								dnst = (d1 + d2 + d3 + d4 + d5 + d6 + d7 + d8) / avr;
 							}
-							fprintf(vtk_ftp, "%lf\n", (double)dnst);
+							fprintf(vtk_ftp, "%f\n", dnst);
 
 						}
 					}
 				}
 
 				fprintf(vtk_ftp, "\nSCALARS Concentration float\nLOOKUP_TABLE default\n");
-				const T3dNumberMask& vtk_maskC = gridC.Mask;
-				//	  fprintf(ftp,"ZONE I=%d, J=%d, K=%d, F=POINT\n", N+1, L+1, M+1);
-				for (int k = 1; k < vtk_M + 1; k++)
+				for (int k = 1; k < vtk_M ; k++)
 				{
-					for (int j = 1; j < vtk_L + 1; j++)
+					for (int j = 1; j < vtk_L; j++)
 					{
-						for (int i = 1; i < vtk_N + 1; i++)
+						for (int i = 1; i < vtk_N; i++)
 						{
 							double cc;
 							int mijk = vtk_maskC[i][j][k];
@@ -6324,18 +6328,17 @@ void TVPProblem::SolveBySplitting()
 								cc = (c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8) / avr;
 							}
 
-							fprintf(vtk_ftp, "%lf\n", (double)cc);
+							fprintf(vtk_ftp, "%f\n", cc);
 						}
 					}
 				}
+				
 				fprintf(vtk_ftp, "\nSCALARS Viscosity float\nLOOKUP_TABLE default\n");
-				//const T3dNumberMask& vtk_maskC = gridC.Mask;
-				//	  fprintf(ftp,"ZONE I=%d, J=%d, K=%d, F=POINT\n", N+1, L+1, M+1);
-				for (int k = 1; k < vtk_M + 1; k++)
+				for (int k = 1; k < vtk_M ; k++)
 				{
-					for (int j = 1; j < vtk_L + 1; j++)
+					for (int j = 1; j < vtk_L; j++)
 					{
-						for (int i = 1; i < vtk_N + 1; i++)
+						for (int i = 1; i < vtk_N; i++)
 						{
 							double cc;
 							int mijk = vtk_maskC[i][j][k];
@@ -6369,12 +6372,11 @@ void TVPProblem::SolveBySplitting()
 								cc = (c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8) / avr;
 							}
 
-							fprintf(vtk_ftp, "%lf\n", (double)cc);
+							fprintf(vtk_ftp, "%f\n", cc);
 						}
 					}
 				}
 				fclose(vtk_ftp);
-				delete[]vtk_fileName;// vtk_fileName = NULL;
 
 
 				//---------------------------------------------------------------
@@ -6598,7 +6600,7 @@ void TVPProblem::SolveBySplitting()
 			#endif
 
 
-				OutputBoundary(timeStepNumber);
+				OutputBoundary(timeStepNumber, fTimeSeparator->SeparationValue);
 				//ComputeChanging(timeStepNumber);
 				//system("./replace.sh");
 
@@ -9131,6 +9133,7 @@ void TImmersedBoundaryProblem::OutputBoundary(int timeStepNumber)
 
 	if (timeStepNumber % TProblem::GlobalSaveStep == 0 || timeStepNumber == 1)
 	{
+		printf("Saving boundary...\n");
 		int len = strlen(TProblem::GlobalCatalog);
 		int i1, i2, i3, i4;
 		int max_cur, max_next;
@@ -9138,7 +9141,7 @@ void TImmersedBoundaryProblem::OutputBoundary(int timeStepNumber)
 		int InCircle = fBoundary->radius_nodes;
 		FILE* f = NULL;
 		char *zonesName;
-		char fileName[40];
+		char fileName[60];
 		/*
 		zonesName = new char[len + 50];
 		string_copy(zonesName, TProblem::GlobalCatalog, len + 50);
@@ -9187,16 +9190,17 @@ void TImmersedBoundaryProblem::OutputBoundary(int timeStepNumber)
 		// vtk
 		//---------------------------------------
 		//len = strlen(TProblem::GlobalCatalog);
-		char *vtk_fileName = new char[len + 50];
-		string_copy(vtk_fileName, TProblem::GlobalCatalog, len + 50);
+		char *vtk_fileName = new char[len + 60];
+		string_copy(vtk_fileName, TProblem::GlobalCatalog, len + 60);
 
 		fileName[0] = '\0';
 
-		if (timeStepNumber == 1)
-			string_print(fileName, 40, "bound%d.vtk", 10000);
-		else
-			string_print(fileName, 40, "bound%d.vtk", 10000 + timeStepNumber);
-		string_concat(vtk_fileName, fileName, len + 50);
+		//if (timeStepNumber == 1)
+		//	string_print(fileName, 40, "bound%d.vtk", 0);
+		//else
+			//string_print(fileName, 60, "bound%d.vtk", timeStepNumber);
+			string_print(fileName, 60, "boundT%f.vtk", timeStepNumber*fTimeSeparator->SeparationValue);
+		string_concat(vtk_fileName, fileName, len + 60);
 
 		f = file_open(vtk_fileName, "w");
 
@@ -9536,6 +9540,100 @@ void TImmersedBoundaryProblem::OutputBoundary(int timeStepNumber)
 
 }
 
+void TImmersedBoundaryProblem::OutputBoundary(int timeStepNumber, double deltaT)
+{
+	//ComputeStress(timeStepNumber);
+
+	//-------------------------------------------------------------------
+	// Two formats output
+	//-------------------------------------------------------------------
+
+		printf("Saving boundary...\n");
+		int len = strlen(TProblem::GlobalCatalog);
+		int i1, i2, i3, i4;
+		int max_cur, max_next;
+		int Circles = fBoundary->height_nodes;
+		int InCircle = fBoundary->radius_nodes;
+		FILE* f = NULL;
+		char *zonesName;
+		char fileName[60];
+		char *vtk_fileName = new char[len + 60];
+		string_copy(vtk_fileName, TProblem::GlobalCatalog, len + 60);
+
+		fileName[0] = '\0';
+		string_print(fileName, 60, "boundT_%6.4f.vtk", timeStepNumber*deltaT);
+		string_concat(vtk_fileName, fileName, len + 60);
+
+		f = file_open(vtk_fileName, "w");
+
+		fprintf(f, "# vtk DataFile Version 1.0\nBound\nASCII\n\n");
+		fprintf(f, "DATASET UNSTRUCTURED_GRID\n");
+		fprintf(f, "POINTS %d double\n", Circles*InCircle);
+
+		for (int cr = 0; cr < Circles; ++cr)
+			for (int i = 0; i < InCircle; ++i)
+			{
+				fprintf(f, "%f %f %f\n", fBoundary->nodes[cr*InCircle + i]->x, fBoundary->nodes[cr*InCircle + i]->y,  fBoundary->nodes[cr*InCircle + i]->z);
+			}
+
+		fprintf(f, "CELLS %d %d\n", InCircle*(Circles - 1), 5 * InCircle*(Circles - 1)); // 6900 34500
+		for (int cr = 0; cr < Circles - 1; ++cr)
+			for (int i = 0; i < InCircle; ++i)
+			{
+				i1 = cr*InCircle + i;
+				i2 = i1 + 1;
+				i3 = i2 + InCircle;
+				i4 = i1 + InCircle;
+				if (i == InCircle - 1)
+				{
+					i2 = cr*InCircle;
+					i3 = (cr + 1)*InCircle;
+				}
+				fprintf(f, "%d %d %d %d %d\n", 4, i1, i2, i3, i4);
+			}
+
+		fprintf(f, "CELL_TYPES %d\n", InCircle*(Circles - 1)); //  6900
+		for (int cr = 0; cr < Circles - 1; ++cr)
+			for (int i = 0; i < InCircle; ++i)
+				fprintf(f, "%d\n", 9);
+
+		fprintf(f, "POINT_DATA %d\n", InCircle*Circles);//6969
+		fprintf(f, "VECTORS Velocity double\n");
+		for (int cr = 0; cr < Circles; ++cr)
+			for (int i = 0; i < InCircle; ++i)
+			{
+				fprintf(f, "%f %f %f\n", fBoundary->nodes[cr*InCircle + i]->xVel, fBoundary->nodes[cr*InCircle + i]->yVel,
+					fBoundary->nodes[cr*InCircle + i]->zVel);
+			}
+	
+		fprintf(f, "VECTORS Displacement double\n");
+		for (int cr = 0; cr < Circles; ++cr)
+			for (int i = 0; i < InCircle; ++i)
+			{
+				double delta_x = fBoundary->nodes[cr*InCircle + i]->x_0 -  fBoundary->nodes[cr*InCircle + i]->x;
+				double delta_y = fBoundary->nodes[cr*InCircle + i]->y_0 -  fBoundary->nodes[cr*InCircle + i]->y;
+				double delta_z = fBoundary->nodes[cr*InCircle + i]->z_0 -  fBoundary->nodes[cr*InCircle + i]->z;
+				fprintf(f, "%f %f %f\n", delta_x, delta_y, delta_z);
+			}
+		
+		fprintf(f, "\n\nSCALARS Pressure float\nLOOKUP_TABLE default\n");
+		for (int cr = 0; cr < Circles; ++cr)
+			for (int i = 0; i < InCircle; ++i)
+			{
+				fprintf(f, "%f\n", fBoundary->nodes[cr*InCircle + i]->p);
+			}
+		fprintf(f, "\n\nSCALARS WSS float\nLOOKUP_TABLE default\n");
+		for (int cr = 0; cr < Circles; ++cr)
+			for (int i = 0; i < InCircle; ++i)
+			{
+				fprintf(f, "%f\n", fBoundary->nodes[cr*InCircle + i]->ShearStress);
+			}
+		fclose(f);
+	printf("delete char vectors\n");
+		delete[]vtk_fileName;// vtk_fileName = NULL;
+		delete[]zonesName;// zonesName = NULL;
+}
+
 void TImmersedBoundaryProblem::ComputeChanging(int timeStepNumber)
 {
 	double *boundary_x = new double[fBoundary->nodesCount];
@@ -9726,79 +9824,180 @@ void TImmersedBoundaryProblem::ComputeChanging(int timeStepNumber)
 	delete[]boundary_z_prev;// boundary_z_prev = NULL;
 }
 
-void TImmersedBoundaryProblem::ComputeStress(TRnRelease3dSpace &U, TRnRelease3dSpace &V, TRnRelease3dSpace &W, int timestepNumber)
+void TImmersedBoundaryProblem::ComputeStress(TRnRelease3dSpace &u, TRnRelease3dSpace &v, TRnRelease3dSpace &w,  int timestepNumber)
 {
-	printf("Calculating Shear Stress for each imm. boundary node...\n");
-
 	int grid_marg = 2;
 	int grid_rad = 3;
+	double hx = fStatement->Hx[1] ;
+	double hy = fStatement->Hy[1] ;
+	double hz = fStatement->Hz[1] ;
 	double h = (fStatement->Hx[1] + fStatement->Hy[1] + fStatement->Hz[1]) / 3.;
 	double hsqr = h*h;
-	double ub = 0, wi = 0, xb = 0, yb = 0, zb = 0,
-		xu = 0, yu = 0, zu = 0,
-		xv = 0, yv = 0, zv = 0,
-		xw = 0, yw = 0, zw = 0,
-		xc = 0, yc = 0, zc = 0,
-		du = 0, dv = 0, dw = 0, sum_w = 0, dist = 0;
-	double Q = 300;
-	int Circles = fBoundary->height_nodes;
-	int InCircle = fBoundary->radius_nodes;
-	//-----------------------------------------------------
-	// Counting stress in imm. boundary node
-	//-----------------------------------------------------
+	double ub = 0, pb = 0, wi = 0, xb = 0, yb = 0, zb = 0, xp = 0, yp = 0, zp = 0, sum_u = 0, sum_w = 0, dist = 0;
+	double 	UDX = 0, UDY = 0, UDZ = 0,
+					VDX = 0, VDY = 0, VDZ = 0,
+					WDX = 0, WDY = 0, WDZ = 0;
+					
+	T3dNormalGrid& wss_grid = dynamic_cast<T3dNormalGrid&>(*fGrid);
+	const T3dNumberMask& wss_mask = wss_grid.Mask;
+	int ind_N = wss_grid.GetSeparator1().EndIndex;
+	int ind_L = wss_grid.GetSeparator2().EndIndex;
+	int ind_M = wss_grid.GetSeparator3().EndIndex;
+	double*** Stress = new double**[ind_N+1];
+	for(int i = 0; i < ind_N + 1; i++)
+	{
+		Stress[i] = new double *[ind_L +1];
+		for(int j = 0; j < ind_L + 1; j++)
+			Stress[i][j] = new double [ind_M+1];
+	}
 
+	for (int k = 1; k < ind_M ; k++)
+	{
+		for (int j = 1; j < ind_L + 0; j++)
+		{
+			for (int i = 1; i < ind_N + 0; i++)
+			{
+				//printf("Calculating grads for (%3d %3d %3d)...\n",i,j,k);
+				int mijk = wss_mask[i][j][k];
+				if (mijk == TFictivePoint)
+				{ 
+					Stress[i][j][k] = 0;
+				}
+				else
+				{
+					if(k!=0 || k!= ind_M || j!=0 || j!= ind_L || i!=0 || i!= ind_N)
+					{
+						if(k == 0)
+						{
+							UDZ = (u[i][j][k+1] - u[i][j][k])/(hz);
+							VDZ = (v[i][j][k+1] - v[i][j][k])/(hz);
+							WDZ = (w[i][j][k+1] - w[i][j][k])/(hz);
+						}
+						if(k==ind_M)
+						{
+							UDZ = (u[i][j][k] - u[i][j][k-1])/(hz);
+							VDZ = (v[i][j][k] - v[i][j][k-1])/(hz);
+							WDZ = (w[i][j][k] - w[i][j][k-1])/(hz);
+						}
+						if(j==0)
+						{
+							UDY = (u[i][j+1][k] - u[i][j][k])/(hy);
+							VDY = (v[i][j+1][k] - v[i][j][k])/(hy);	
+							WDY = (w[i][j+1][k] - w[i][j][k])/(hy);
+						}
+						if(j==ind_L)
+						{
+							UDY = (u[i][j][k] - u[i][j-1][k])/(hy);
+							VDY = (v[i][j][k] - v[i][j-1][k])/(hy);
+							WDY = (w[i][j][k] - w[i][j-1][k])/(hy);
+						}
+						if(i==0)
+						{
+							UDZ = (u[i+1][j][k] - u[i][j][k])/(hx);
+							VDZ = (v[i+1][j][k] - v[i][j][k])/(hx);
+							WDZ = (w[i+1][j][k] - w[i][j][k])/(hx);
+						}
+						if(i==ind_N)
+						{
+							UDZ = (u[i][j][k] - u[i-1][j][k])/(hx);
+							VDZ = (v[i][j][k] - v[i-1][j][k])/(hx);
+							WDZ = (w[i][j][k] - w[i-1][j][k])/(hx);
+						}
+					}else{
+						UDX = (u[i+1][j][k] - u[i-1][j][k])/(2*hx);
+						UDY = (u[i][j+1][k] - u[i][j-1][k])/(2*hy);
+						UDZ = (u[i][j][k+1] - u[i][j][k-1])/(2*hz);
+						VDX = (v[i+1][j][k] - v[i-1][j][k])/(2*hx);
+						VDY = (v[i][j+1][k] - v[i][j-1][k])/(2*hy);
+						VDZ = (v[i][j][k+1] - v[i][j][k-1])/(2*hz);
+						WDX = (w[i+1][j][k] - w[i-1][j][k])/(2*hx);
+						WDY = (w[i][j+1][k] - w[	i][j-1][k])/(2*hy);
+						WDZ = (w[i][j][k+1] - w[i][j][k-1])/(2*hz);
+					}
+				}
+				// 3.5e-3*(sqrt(2*(grad(U)_0^2+grad(U)_4^2+grad(U)_8^2+grad(U)_1*grad(U)_3+grad(U)_2*grad(U)_6+grad(U)_5*grad(U)_7)+grad(U)_1^2+grad(U)_2^2+grad(U)_3^2+grad(U)_5^2+grad(U)_6^2+grad(U)_7^2))
+				//					|	UDX	UDY	UDZ	|
+				//grad(U) = |	VDX	VDY	VDZ	|
+				//					|	WDX	WDY	WDZ	|
+				Stress[i][j][j] =   this->fMu1 *(sqrt( 2*(UDX*UDX+VDY*VDY+WDZ*WDZ+UDY*VDX+UDZ*WDX+VDZ*WDY)+UDY*UDY+UDZ*UDZ+VDX*VDX+VDZ*VDZ+WDX*WDX+WDY*WDY));
+			}
+		}
+	}
 
+	printf("Projection wss on boundary...\n");		
+//*
 	for (int il = 0; il < fBoundary->height_nodes; il++)
 	{
+
+		xb = fBoundary->nodes[il*fBoundary->radius_nodes]->x;
+		// find layer near point xc
+		int x_near = 0;
+		for (int i = 0; i < fStatement->NxU; i++)
+			if (fabs(fStatement->XP[i] - xb) <= h)
+			{
+				x_near = i;
+				break;
+			}
+		//printf("\nil=%d x_near=%d", il, x_near);
+	
 		for (int ir = 0; ir < fBoundary->radius_nodes; ir++)
 		{
 			xb = fBoundary->nodes[il*fBoundary->radius_nodes + ir]->x;
 			yb = fBoundary->nodes[il*fBoundary->radius_nodes + ir]->y;
 			zb = fBoundary->nodes[il*fBoundary->radius_nodes + ir]->z;
+			//printf("\nir=%d", ir);
 
-			xc = fBoundary->nodes[il*fBoundary->radius_nodes + ir]->x;
-			//yc = TCanalIBMWithElasticBoundary->fLengthY/2.;
-			//zc = TCanalIBMWithElasticBoundary->fLengthZ/2.;
-			yc = fBoundary->GetYCenter();
-			zc =  fBoundary->GetZCenter();
-			double mu = fBoundary->nodes[il*fBoundary->radius_nodes + ir]->vis;
-			double r = sqrt( (xb - xc)*(xb - xc) + (yb - yc)*(yb - yc) + (zb - zc)*(zb - zc) );
-			//printf("\n xb > %lf -- yb > %lf -- zb > %lf\n xc > %lf -- yc > %lf -- zc > %lf\nr > %lf\n",xb,yb,zb,xc,yc,zc,r);
-			fBoundary->nodes[il*fBoundary->radius_nodes + ir]->ShearStress = (4*mu*Q)/(M_PI*r*r*r);;
-		}
-	}
-
-	//----------------------------------
-	//Debug! Output boundary as 2D plain
-	//----------------------------------
-	if(0 == 1)
-	{
-		int len = strlen(TProblem::GlobalCatalog);
-		char *zonesName = new char[len + 50];
-		string_copy(zonesName, TProblem::GlobalCatalog, len + 50);
-
-		char fileName[40];
-		string_print(fileName, 40, "debbound%d.dat", 10000 + timestepNumber);
-		string_concat(zonesName, fileName, len + 50);
-
-		FILE* f = file_open(zonesName, "w");
-
-		fprintf(f, "TITLE = \"debbound2d\"\n");
-		fprintf(f, "VARIABLES = \"X\",\"Y\",\"U\",\"V\",\"W\",\"P\",\"Stiff\",\"Stress\"\n");
-		fprintf(f, "ZONE T=\"Deb%d\", I=%d, J=%d, F=POINT\n", timestepNumber, Circles, InCircle);
-		//fprintf(f, "ZONE N =%d, E =%d, DATAPACKING = POINT, ZONETYPE = FEQUADRILATERAL\n", Circles*InCircle, InCircle*(Circles - 1));
-
-		for (int i = 0; i < InCircle; ++i)
-			for (int cr = 0; cr < Circles; ++cr)
+			//-----------------------------------------------------
+			// Counting p in imm. boundary node
+			//-----------------------------------------------------
+			pb = 0.;
+			sum_w = 0.;
+			sum_u = 0.;
+				//*
+			for (int ix = x_near - grid_marg>0 ? (x_near - grid_marg) : 0; ix < x_near + grid_marg + grid_rad && ix<fStatement->NxP; ix++)
 			{
-				fprintf(f, "%lf %lf %lf %lf %lf %lf %lf %lf\n", cr*fBoundary->step, i*fBoundary->step,
-					fBoundary->nodes[cr*InCircle + i]->xVel, fBoundary->nodes[cr*InCircle + i]->yVel, fBoundary->nodes[cr*InCircle + i]->zVel,
-					fBoundary->nodes[cr*InCircle + i]->p, fBoundary->nodes[cr*InCircle + i]->stretchingStiffness, fBoundary->nodes[cr*InCircle + i]->ShearStress);
-			}
+				//printf("\nix >> %d",ix);
+				bool no_near_point = true;
+				bool first_near_point = false;
+				for (int iy = 1; iy < fStatement->NyP - 1; iy++)
+					for (int iz = 1; iz < fStatement->NzP - 1; iz++)
+					{
+						xp = fStatement->XP[ix];
+						yp = fStatement->YP[iy];
+						zp = fStatement->ZP[iz];
+						dist = pow(xb - xp, 2) + pow(yb - yp, 2) + pow(zb - zp, 2);
+						if (dist < hsqr)
+						{
+							if (!first_near_point) first_near_point = true;
+							no_near_point = false;
+							wi = 1. / dist;
+							//printf("\npoint %d %d %d p=%lf d=%lf wi=%lf", ix, iy, iz, (double) pressure[ix][iy][iz],dist,wi);
 
-		fclose(f);
-		delete[]zonesName;
+							sum_w += wi*10.e-2;
+							sum_u += Stress[ix][iy][iz] * wi*10.e-2 ;
+							//printf("\nres sum_u=%lf  sum_w=%lf", sum_u, sum_w);
+						}
+				}
+				if (first_near_point && no_near_point) break;
+			}		//*/
+			pb += sum_u / sum_w;
+			//printf("wss is"); printf(" %f\n",pb);
+			fBoundary->nodes[il*fBoundary->radius_nodes + ir]->ShearStress = pb;
+			printf("OK:res =%e\n",pb);
+
+
+		}
+
 	}
+//*/
+	printf("Delete temporary massive...\n");
+	for(int i = 0; i < ind_N + 1; i++)
+	{
+		for(int j = 0; j < ind_L + 1; j++)
+			delete []Stress[i][j];
+		delete [] Stress[i];
+	}
+	delete [] Stress;
 	printf("Calculating Shear Stress for each imm. boundary node. OK.\n");
 }
 //********************************************************************************
@@ -10458,6 +10657,79 @@ void TImmersedBoundaryProblem::CountBoundaryViscosity(TRnRelease3dSpace &vis)
 			}
 			pb += sum_u / sum_w;
 			fBoundary->nodes[il*fBoundary->radius_nodes + ir]->vis = pb;
+		//	printf("\nOK:res sum_u=%lf  sum_w=%lf p=%lf\n",sum_u,sum_w,pb);
+
+
+		}
+	}
+
+	//approxP(pressure);
+
+	//approxUP(TRnRelease3dSpace&, TRnRelease3dSpace&);
+
+}
+
+void TImmersedBoundaryProblem::CountBoundaryWSS(TRnRelease3dSpace &wss)
+{
+	int grid_marg = 2;
+	int grid_rad = 3;
+	double h = (fStatement->Hx[1] + fStatement->Hy[1] + fStatement->Hz[1]) / 3.;
+	double hsqr = h*h;
+	double ub = 0, pb = 0, wi = 0, xb = 0, yb = 0, zb = 0, xp = 0, yp = 0, zp = 0, sum_u = 0, sum_w = 0, dist = 0;
+	for (int il = 0; il < fBoundary->height_nodes; il++)
+	{
+		xb = fBoundary->nodes[il*fBoundary->radius_nodes]->x;
+		// find layer near point xc
+		int x_near = 0;
+		for (int i = 0; i < fStatement->NxU; i++)
+		if (fabs(fStatement->XU[i] - xb) <= h)
+		{
+			x_near = i;
+			break;
+		}
+		//printf("\nil=%d x_near=%d", il, x_near);
+		for (int ir = 0; ir < fBoundary->radius_nodes; ir++)
+		{
+			xb = fBoundary->nodes[il*fBoundary->radius_nodes + ir]->x;
+			yb = fBoundary->nodes[il*fBoundary->radius_nodes + ir]->y;
+			zb = fBoundary->nodes[il*fBoundary->radius_nodes + ir]->z;
+			//printf("\nir=%d", ir);
+
+			//-----------------------------------------------------
+			// Counting p in imm. boundary node
+			//-----------------------------------------------------
+			pb = 0.;
+			sum_w = 0.;
+			sum_u = 0.;
+			for (int ix = x_near - grid_marg>0 ? (x_near - grid_marg) : 0; ix < x_near + grid_marg + grid_rad && ix<fStatement->NxP; ix++)
+			{
+				//printf("\nix >> %d",ix);
+				bool no_near_point = true;
+				bool first_near_point = false;
+				for (int iy = 1; iy < fStatement->NyU - 1; iy++)
+					for (int iz = 1; iz < fStatement->NzU - 1; iz++)
+					{
+						xp = fStatement->XP[ix];
+						yp = fStatement->YP[iy];
+						zp = fStatement->ZP[iz];
+						dist = pow(xb - xp, 2) + pow(yb - yp, 2) + pow(zb - zp, 2);
+						if (dist < hsqr)
+						{
+							if (!first_near_point) first_near_point = true;
+							no_near_point = false;
+							wi = 1. / dist;
+							//printf("\npoint %d %d %d p=%lf d=%lf wi=%lf", ix, iy, iz, (double) pressure[ix][iy][iz],dist,wi);
+
+							sum_w += wi*10.e-2;
+							sum_u += wss[ix][iy][iz] * wi*10.e-2;
+							//printf("\nres sum_u=%lf  sum_w=%lf", sum_u, sum_w);
+						}
+
+				}
+				if (first_near_point && no_near_point) break;
+			}
+			pb += sum_u / sum_w;
+			fBoundary->nodes[il*fBoundary->radius_nodes + ir]->ShearStress = pb;
 		//	printf("\nOK:res sum_u=%lf  sum_w=%lf p=%lf\n",sum_u,sum_w,pb);
 
 
